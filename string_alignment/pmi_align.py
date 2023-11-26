@@ -17,7 +17,8 @@ def compute_ppmi_matrix(datapoint_pred_counts: Iterable[Dict[str, int]], datapoi
     for pred_counts, ref_counts in zip(datapoint_pred_counts, datapoint_ref_counts):
         for pred_token in pred_counts.keys():
             for ref_token in ref_counts.keys():
-                co_occurrence_matrix[vocab_preds.index(pred_token), vocab_refs.index(ref_token)] += 1
+                # co_occurrence_matrix[vocab_preds.index(pred_token), vocab_refs.index(ref_token)] += 1
+                co_occurrence_matrix[vocab_preds.index(pred_token), vocab_refs.index(ref_token)] += min(pred_counts[pred_token], ref_counts[ref_token])
     arr = co_occurrence_matrix
     row_totals = arr.sum(axis=1).astype(float)
     prob_cols_given_row = (arr.T / row_totals).T
