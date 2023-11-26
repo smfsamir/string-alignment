@@ -1,8 +1,8 @@
 import numpy as np
-from typing import List, Iterable, Dict
+from typing import List, Iterable, Dict, Tuple
 
 
-def compute_ppmi_matrix(datapoint_pred_counts: Iterable[Dict[str, int]], datapoint_ref_counts: Iterable[Dict[str, int]]) -> List[List[float]]:
+def compute_ppmi_matrix(datapoint_pred_counts: Iterable[Dict[str, int]], datapoint_ref_counts: Iterable[Dict[str, int]]) -> Tuple[np.array, List[str], List[str]]:
     """
     Computes the pointwise mutual information matrix for a given datapoint
     :param datapoint_pred_counts: The counts of each token (e.g., word or character) in the predicted sentence
@@ -27,4 +27,4 @@ def compute_ppmi_matrix(datapoint_pred_counts: Iterable[Dict[str, int]], datapoi
     ratio[ratio==0] = 0.00001
     _pmi = np.log(ratio)
     _pmi[_pmi<0] = 0
-    return _pmi
+    return _pmi, vocab_preds, vocab_refs
