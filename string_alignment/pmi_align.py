@@ -28,3 +28,40 @@ def compute_ppmi_matrix(datapoint_pred_counts: Iterable[Dict[str, int]], datapoi
     _pmi = np.log(ratio)
     _pmi[_pmi<0] = 0
     return _pmi, vocab_preds, vocab_refs
+
+def dtw_alignment(distance_matrix: np.array): # assumption: the columns hold the reference tokens and the rows hold the predicted tokens
+    dtw_cost_matrix = np.full(distance_matrix.shape, np.inf)
+    dtw_cost_matrix[0, 0] = 0
+
+    for i in range(1, distance_matrix.shape[0]):
+        for j in range(1, distance_matrix.shape[1]):
+            cost = distance_matrix[i, j]
+            dtw_cost_matrix[i, j] = cost + min(dtw_cost_matrix[i-1, j], # the prediction is too short here
+                                               dtw_cost_matrix[i, j-1], # the prediction is too long here
+                                               dtw_cost_matrix[i-1, j-1]) # correct prediction
+
+    dtw_cost_matrix = dtw_cost_matrix.T
+
+    i = len(dtw_cost_matrix) - 1  # Index for the last row
+    j = len(dtw_cost_matrix[0]) - 1  # Index for the last column
+
+    # Initialize the alignment indices list
+    alignment_indices = [0] * len(dtw_cost_matrix)
+
+    # Traverse the DTW matrix from bottom-right to top-left
+    while i > 0 or j > 0:
+        # Store the current alignment index
+        alignment_indices[i] = j
+
+        # Determine the next cell in the alignment path
+        if i > 0 and (j == 0 or dtw_cost_matrix[i-1][j] <= min(dtw_cost_matrix[i-1][j-1], dtw_cost_matrix[i][j-1])):
+            i = i - 1  # Move up (deletion or prediction too short)
+        elif j > 0 and (i == 0 or dtw_cost_matrix[i][j-1] <= min(dtw_cost_matrix[i-1][j-1], dtw_cost_matrix[i-1][j])):
+            j = j - 1  # Move left (insertion or observed too long)
+        else:
+            i = i - 1  # Move diagonally (substitution)
+
+    # Set the alignment index for the starting point (top-left corner)
+    alignment_indices[0] = 0
+
+    return alignment_indices
