@@ -2,22 +2,24 @@ import numpy as np
 from typing import List, Iterable, Dict, Tuple
 
 
-def compute_ppmi_matrix(datapoint_pred_counts: Iterable[Dict[str, int]], datapoint_ref_counts: Iterable[Dict[str, int]]) -> Tuple[np.array, List[str], List[str]]:
+def compute_ppmi_matrix(co_occurrence_counts: Dict[Tuple[str, str], int]) -> Tuple[np.array, List[str], List[str]]:
     """
-    Computes the pointwise mutual information matrix for a given datapoint
-    :param datapoint_pred_counts: The counts of each token (e.g., word or character) in the predicted sentence
-    :param datapoint_ref_counts: The counts of each word in the reference sentence
+    Computes the pointwise mutual information matrix. 
+    :param co_occurrence_counts: A dictionary of the number of times two tokens co-occur. Assumed that first
+    token is source and second token is target.
     :return: The pointwise mutual information matrix
     """
-    vocab_preds = sorted(list(set([token for pred_counts in datapoint_pred_counts for token in pred_counts.keys()])))
-    vocab_refs = sorted(list(set([token for ref_counts in datapoint_ref_counts for token in ref_counts.keys()])))
-    co_occurrence_matrix = np.zeros((len(vocab_preds), len(vocab_refs))) 
-    # the co-occurrence matrix is a matrix of size |V_pred| x |V_ref|, where |V_pred| is the size of the vocabulary of the predicted sentence and |V_ref| is the size of the vocabulary of the reference sentence
+    # vocab_preds = sorted(list(set([token for pred_counts in datapoint_pred_counts for token in pred_counts.keys()])))
+    # vocab_refs = sorted(list(set([token for ref_counts in datapoint_ref_counts for token in ref_counts.keys()])))
 
-    for pred_counts, ref_counts in zip(datapoint_pred_counts, datapoint_ref_counts):
-        for pred_token in pred_counts.keys():
-            for ref_token in ref_counts.keys():
-                co_occurrence_matrix[vocab_preds.index(pred_token), vocab_refs.index(ref_token)] += 1
+    # populate vocab_preds using the  
+    vocab_src = sorted(list(set([token[0] for token in co_occurrence_counts.keys()])))
+    vocab_tgt = sorted(list(set([token[1] for token in co_occurrence_counts.keys()])))
+    co_occurrence_matrix = np.zeros((len(vocab_src), len(vocab_tgt))) 
+    # the co-occurrence matrix is a matrix of size |V_src| x |V_tgt|, where |V_src| is the size of the vocabulary of the predicted sentence and |V_tgt| is the size of the vocabulary of the reference sentence
+    # populate the co-occurrence matrix using the co-occurrence counts
+    for (src, tgt), count in co_occurrence_counts.items():
+        co_occurrence_matrix[vocab_src.index(src), vocab_tgt.index(tgt)] = count
     arr = co_occurrence_matrix
     row_totals = arr.sum(axis=1).astype(float)
     prob_cols_given_row = (arr.T / row_totals).T
@@ -27,7 +29,7 @@ def compute_ppmi_matrix(datapoint_pred_counts: Iterable[Dict[str, int]], datapoi
     ratio[ratio==0] = 0.00001
     _pmi = np.log(ratio)
     _pmi[_pmi<0] = 0
-    return _pmi, vocab_preds, vocab_refs
+    return _pmi, vocab_src, vocab_tgt
 
 def dtw_alignment(distance_matrix: np.array): # assumption: the columns hold the reference tokens and the rows hold the predicted tokens
     dtw_cost_matrix = np.full(distance_matrix.shape, np.inf)
