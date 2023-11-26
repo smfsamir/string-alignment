@@ -18,10 +18,13 @@ def compute_ppmi_matrix(datapoint_pred_counts: Iterable[Dict[str, int]], datapoi
         for pred_token in pred_counts.keys():
             for ref_token in ref_counts.keys():
                 co_occurrence_matrix[vocab_preds.index(pred_token), vocab_refs.index(ref_token)] += 1
-    # set 0 entries to a value smaller than 1 to avoid division by 0.
-    co_occurrence_matrix[co_occurrence_matrix == 0] = 0.00000001
-    # compute the PPMI matrix
-    ppmi_matrix = np.log(co_occurrence_matrix / np.outer(np.sum(co_occurrence_matrix, axis=1), np.sum(co_occurrence_matrix, axis=0)))
-    # set negative values to 0
-    ppmi_matrix[ppmi_matrix < 0] = 0
-    return ppmi_matrix
+    arr = co_occurrence_matrix
+    row_totals = arr.sum(axis=1).astype(float)
+    prob_cols_given_row = (arr.T / row_totals).T
+    col_totals = arr.sum(axis=0).astype(float)
+    prob_of_cols = col_totals / sum(col_totals)
+    ratio = prob_cols_given_row / prob_of_cols
+    ratio[ratio==0] = 0.00001
+    _pmi = np.log(ratio)
+    _pmi[_pmi<0] = 0
+    return _pmi
