@@ -31,6 +31,35 @@ def compute_ppmi_matrix(co_occurrence_counts: Dict[Tuple[str, str], int]) -> Tup
     _pmi[_pmi<0] = 0
     return _pmi, vocab_src, vocab_tgt
 
+def compute_npmi_matrix(co_occurrence_counts: Dict[Tuple[str, str], int]) -> Tuple[np.array, List[str], List[str]]:
+    """
+    Computes the normalized pointwise mutual information matrix. 
+    :param co_occurrence_counts: A dictionary of the number of times two tokens co-occur. Assumed that first
+    token is source and second token is target.
+    :return: The normalized pointwise mutual information matrix
+    """
+    vocab_src = sorted(list(set([token[0] for token in co_occurrence_counts.keys()])))
+    vocab_tgt = sorted(list(set([token[1] for token in co_occurrence_counts.keys()])))
+    co_occurrence_matrix = np.zeros((len(vocab_src), len(vocab_tgt))) 
+
+    for (src, tgt), count in co_occurrence_counts.items():
+        co_occurrence_matrix[vocab_src.index(src), vocab_tgt.index(tgt)] = count
+
+    arr = co_occurrence_matrix
+    row_totals = arr.sum(axis=1).astype(float)
+    prob_cols_given_row = (arr.T / row_totals).T
+    col_totals = arr.sum(axis=0).astype(float)
+    prob_of_cols = col_totals / sum(col_totals)
+
+    pmi_ratio = np.log(prob_cols_given_row / np.outer(row_totals, prob_of_cols) + 1e-10)
+    pmi_ratio[pmi_ratio < 0] = 0
+
+    npmi_matrix = pmi_ratio / (-np.log(prob_cols_given_row) + 1e-10)
+    npmi_matrix[np.isnan(npmi_matrix)] = 0
+
+    return npmi_matrix, vocab_src, vocab_tgt
+
+
 def dtw_alignment(distance_matrix: np.array): # assumption: the columns hold the reference tokens and the rows hold the predicted tokens
     dtw_cost_matrix = np.full(distance_matrix.shape, np.inf)
     dtw_cost_matrix[0, 0] = 0

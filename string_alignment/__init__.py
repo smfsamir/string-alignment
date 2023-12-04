@@ -1,1 +1,1 @@
-from .pmi_align import compute_ppmi_matrix, dtw_alignment
+from .pmi_align import compute_ppmi_matrix, dtw_alignment, compute_npmi_matrix
